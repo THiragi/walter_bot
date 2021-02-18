@@ -1,0 +1,5 @@
+/node_modules
+walter_bot.code-workspace
+
+.env
+.env.development.local
