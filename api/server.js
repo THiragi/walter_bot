@@ -3,21 +3,37 @@
 const express = require('express');
 const line = require('@line/bot-sdk');
 const PORT = process.env.PORT || 3000;
+const bp = require('body-parser'); // body-parserがないとreq.body.eventsが取れない
+require('dotenv').config(); 
 
 const config = {
-    channelSecret: process.env.LINE_CHANNEL_SECRET,
-    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
 
 const app = express();
+// req.body.eventsでlineメッセージを受け取れるように設定。
+app.use(bp.json())
+app.use(bp.urlencoded({ extended: true }))
 
 app.get('/', (req, res) => res.send('Hello LINE BOT!(GET)')); //ブラウザ確認用(無くても問題ない)
-app.post('/webhook', line.middleware(config), (req, res) => {
-    console.log(req.body.events);
+app.post('/webhook', (req, res) => {
+    // res.setHeader('Content-Type', 'text/plain');
 
+    // ERR_HTTP_HEADERS_SENTが起こるので、thenとcatchでreturnさせるようにする。
     Promise
       .all(req.body.events.map(handleEvent))
-      .then((result) => res.json(result));
+      .then((result) => {
+        if (!result) {
+          throw new Error("Messages not found");
+        }
+        // console.log(result);
+        return res.status(200).json(result);
+      })
+      .catch((error) => {
+        console.log(error);
+        return res.status(404).json({ error });
+      });
 });
 
 const client = new line.Client(config);
@@ -33,5 +49,8 @@ async function handleEvent(event) {
   });
 }
 
-app.listen(PORT);
+// app.listen(PORT);
+// console.log(`Server running at ${PORT}`);
+
+(process.env.NOW_REGION) ? module.exports = app : app.listen(PORT);
 console.log(`Server running at ${PORT}`);

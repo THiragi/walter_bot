@@ -3,3 +3,4 @@ walter_bot.code-workspace
 
 .env
 .env.development.local
+.vercel
